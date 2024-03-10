@@ -3,9 +3,21 @@
 #Check for packages needed and download if not available
 
 #Configure GUI:
-load.file()##Load in GUI graphics
-##Make sure GUI fits to screen?
-##Lock window size? Or make this adaptive somehow??
+from tkinter import *
+from tkinter import ttk
+root = Tk()
+root.iconbitmap("mcas.ico") ##Set icon
+root.title('MCAS Auction') ##Set window name
+root.geometry("1000x500") ##Make sure GUI fits to screen? Lock window size? Or make this adaptive somehow?? Fix this later
+bacg = PhotoImage(file = "bg.png") ##Add background... Eventually I will add a lot of white space to right/bottom
+label1 = Label( root, image = bacg)
+label1.place(x = 0, y = 0) ##Can maybe move below button row later
+frm = ttk.Frame(root, padding=10)
+frm.grid()
+s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
+ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=1) ##Ideally I will later remove this from grid
+ttk.Button(frm, text="Quit", command=root.destroy).grid(column=0, row=0)
+root.mainloop()
 
 #Allow the user to load previous seller information
 seller_info=read.csv('seller_info.csv') #This contains seller information from previous auctions. This information will be printed as a header in the seller's payout summary
@@ -45,6 +57,7 @@ sell_ID=sellid_fun(f,l)
 ##Write this info to seller_info.csv
 
 #Register sellers
+ttk.Button(frm, text="Register seller", command=).grid(column=1, row=0) ##Button to open register seller screen
 sellertemp=input('Seller_ID: ')
 ftemp=input('First name: ')
 ltemp=input('Last name: ')
@@ -56,6 +69,7 @@ bag_count=input('Number of items to register (bag count): ')
 ##Check bag count !> 50... might be a problem for DON?
 
 #Init system to log auction sales. Need a good way to start/end files? Also, be sure to convert seller ID string to uppercase only
+ttk.Button(frm, text="Start auction", command=).grid(column=1, row=0)
 df=join(auction_file,seller_info[grep('sell_ID','bag_count')]) ##Grab registered seller IDs and number of items to create a nearly empty table
 main_assign_fun<-function(a,b,c,d){} ##Function to assign below information
 sell_ID=input('Seller ID: ')
@@ -84,18 +98,18 @@ df$bag_count=length(unique(df$item_number))
 ##Require buyer number to be a number from 0-999.
 
 #Init user-friendly display of raw table
-##Create a button that will open the raw table
+ttk.Button(frm, text="Auction data", command=).grid(column=1, row=0) ##Create a button that will open the raw table
 return(df)##Display this a table in a specific order... this can be read-only (that might be best?... have a different button for writing?)
 
 #Init billing system (summarize table by buyer number)
-##Create button in main GUI to open this menu
+ttk.Button(frm, text="Cash out", command=).grid(column=1, row=0) ##Create button in main GUI to open this menu
 ##How was this done before? Do I create a unique list of seller IDs and auto-print each??? Might make this is a sub-menu or something... Maybe also make a user-friendly way to cancel printing?
 buytemp=input('Buyer number: ')##Enter the buyer number
 return(subset(df,df$buyer_number==buytemp)) ##Return certain information for this buyer
 ##Need to create an easy way to have this interact with the printer
 
 #Init seller payout system:
-##Create button to open the prompt for the payout system
+ttk.Button(frm, text="Pay sellers", command=).grid(column=1, row=0) ##Create button to open the prompt for the payout system
 selltemp=input('Seller number: ')##Enter seller ID
 y=subset(df,df$sell_ID==selltemp)
 seller_payout=y$price-y$club_sales ##Seller will get the raw price minus the club's share
@@ -106,7 +120,7 @@ seller_payout=y$price-y$club_sales ##Seller will get the raw price minus the clu
 ##https://stackoverflow.com/questions/30329924/how-to-print-directly-without-showing-print-dialog-using-python-script-in-window
 
 #Save auction file
-##Create a save button such that you can save the current auction df, try to avoid any overwrite prompts
+ttk.Button(frm, text="Save auction", command=).grid(column=1, row=0) ##Create a save button such that you can save the current auction df, try to avoid any overwrite prompts
 write.table(df,file="") ##Save file as auction_file.csv
 
 #It would be best if I can include a warning message before closing the window (a reminder to save everything)
