@@ -15,8 +15,15 @@ label1.place(x = 0, y = 0) ##Can maybe move below button row later
 frm = ttk.Frame(root, padding=10)
 frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
-ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=1) ##Ideally I will later remove this from grid
-ttk.Button(frm, text="Quit", command=root.destroy).grid(column=0, row=0)
+ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0) ##Ideally I will later remove this from grid
+ttk.Button(frm, text="Register seller", command=root.destroy).grid(column=2, row=0)
+ttk.Button(frm, text="Start auction", command=root.destroy).grid(column=3, row=0)
+ttk.Button(frm, text="View data", command=root.destroy).grid(column=4, row=0)
+ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
+ttk.Button(frm, text="Pay sellers", command=root.destroy).grid(column=6, row=0)
+ttk.Button(frm, text="Save auction", command=root.destroy).grid(column=7, row=0)
+ttk.Button(frm, text="Start auction", command=root.destroy).grid(column=8, row=0)
+ttk.Button(frm, text="Quit", command=root.destroy).grid(column=9, row=0) ##Button to exit program... need to add warning
 root.mainloop()
 
 #Allow the user to load previous seller information
@@ -98,7 +105,7 @@ df$bag_count=length(unique(df$item_number))
 ##Require buyer number to be a number from 0-999.
 
 #Init user-friendly display of raw table
-ttk.Button(frm, text="Auction data", command=).grid(column=1, row=0) ##Create a button that will open the raw table
+ttk.Button(frm, text="View data", command=).grid(column=1, row=0) ##Create a button that will open the raw table
 return(df)##Display this a table in a specific order... this can be read-only (that might be best?... have a different button for writing?)
 
 #Init billing system (summarize table by buyer number)
