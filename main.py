@@ -5,18 +5,36 @@
 #Configure GUI:
 from tkinter import *
 from tkinter import ttk
+def reg_window(): #Window opened when registering sellers
+    seller_window = Toplevel(root)
+    seller_window.title("Register Seller")
+    seller_window.geometry("300x200")  # Set the size of the new window
+    label1 = Label(seller_window, image = patt)
+    label1.place(x = 0, y = 0)
+    seller_ID = StringVar() #Take input and save
+    bag_count = StringVar() #Take input and save
+    ttk.Label(seller_window, text="Seller ID:").pack(pady=10)
+    entry1=Entry(seller_window, textvariable=seller_ID)
+    entry1.pack()
+    ttk.Label(seller_window, text="Bag count:").pack(pady=10)
+    entry2=Entry(seller_window, textvariable=bag_count)
+    entry2.pack()
+    button = ttk.Button(seller_window, text="Save", command=seller_window.destroy)
+    button.pack()
+
 root = Tk()
 root.iconbitmap("mcas.ico") ##Set icon
 root.title('MCAS Auction') ##Set window name
 root.geometry("1000x500") ##Make sure GUI fits to screen? Lock window size? Or make this adaptive somehow?? Fix this later
+patt = PhotoImage(file = "pattern.png") ##Add background... Eventually I will add a lot of white space to right/bottom
 bacg = PhotoImage(file = "bg.png") ##Add background... Eventually I will add a lot of white space to right/bottom
-label1 = Label( root, image = bacg)
-label1.place(x = 0, y = 0) ##Can maybe move below button row later
+label2 = Label( root, image = bacg)
+label2.place(x = 0, y = 0)
 frm = ttk.Frame(root, padding=10)
 frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
 ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0) ##Ideally I will later remove this from grid
-ttk.Button(frm, text="Register seller", command=root.destroy).grid(column=2, row=0)
+ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
 ttk.Button(frm, text="Start auction", command=root.destroy).grid(column=3, row=0)
 ttk.Button(frm, text="View data", command=root.destroy).grid(column=4, row=0)
 ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
