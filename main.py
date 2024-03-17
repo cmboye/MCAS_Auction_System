@@ -1,32 +1,40 @@
 #MCAS system with GUI written by CB 3/6/24. Updated by CB on 3/8/24.
-
 #Check for packages needed and download if not available
 
 #Configure GUI:
 from tkinter import *
+import tkinter.messagebox
 from tkinter import ttk
-def reg_window(): #Window opened when registering sellers
+def reg_window(): ##Window opened when registering sellers
     seller_window = Toplevel(root)
     seller_window.title("Register Seller")
-    seller_window.geometry("300x200")  # Set the size of the new window
+    seller_window.geometry("300x200")  ##Set the size of the new window
     label1 = Label(seller_window, image = patt)
     label1.place(x = 0, y = 0)
-    seller_ID = StringVar() #Take input and save
-    bag_count = StringVar() #Take input and save
+    seller_ID = StringVar() ##Take input and save
+    bag_count = StringVar() ##Take input and save
     ttk.Label(seller_window, text="Seller ID:").pack(pady=10)
     entry1=Entry(seller_window, textvariable=seller_ID)
     entry1.pack()
     ttk.Label(seller_window, text="Bag count:").pack(pady=10)
     entry2=Entry(seller_window, textvariable=bag_count)
     entry2.pack()
-    button = ttk.Button(seller_window, text="Save", command=seller_window.destroy)
+    def val_inputs_reg(): ##Define the function to save registration screen inputs
+        input_vector1 = entry1.get()
+        input_vector2 = entry2.get()
+        if not input_vector1 or not input_vector2: ##Basic error handling... next I will add checking the formatting of the entries
+            tkinter.messagebox.showinfo("Error", "Please fill in both input fields.")
+            return
+        seller_window.destroy()
+    button = ttk.Button(seller_window, text="Save", command=val_inputs_reg)
     button.pack()
 
 root = Tk()
+#root.bind("<Return>", returnPressed)  ##Later I need to add something like this to make enter key work
 root.iconbitmap("mcas.ico") ##Set icon
 root.title('MCAS Auction') ##Set window name
-root.geometry("1000x500") ##Make sure GUI fits to screen? Lock window size? Or make this adaptive somehow?? Fix this later
-patt = PhotoImage(file = "pattern.png") ##Add background... Eventually I will add a lot of white space to right/bottom
+root.geometry("1000x500") ##Make sure GUI fits to screen? Make this adaptive somehow?? Fix this later
+patt = PhotoImage(file = "pattern.png")
 bacg = PhotoImage(file = "bg.png") ##Add background... Eventually I will add a lot of white space to right/bottom
 label2 = Label( root, image = bacg)
 label2.place(x = 0, y = 0)
