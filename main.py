@@ -1,5 +1,11 @@
-#MCAS system with GUI written by CB 3/6/24. Updated by CB on 3/8/24.
+#MCAS system with GUI written by CB 3/6/24.
 #Check for packages needed and download if not available
+import importlib.util
+import re
+package_name = 'tkinter' ##Check if needed packages are available
+spec = importlib.util.find_spec(package_name) ##Can I check multiple at once?
+if spec is None:
+    print(package_name +" is not installed")
 
 #Configure GUI:
 from tkinter import *
@@ -24,6 +30,12 @@ def reg_window(): ##Window opened when registering sellers
         input_vector2 = entry2.get()
         if not input_vector1 or not input_vector2: ##Basic error handling... next I will add checking the formatting of the entries
             tkinter.messagebox.showinfo("Error", "Please fill in both input fields.")
+            return
+        while not re.match("[-a-zA-Z ]{1,3}", input_vector1):
+            tkinter.messagebox.showinfo("Error", "Seller ID must be 1-3 letters.") ##The 1-3 length seems to not be working here
+            return
+        while not re.match("^([1-9]|[1-4]\d|50)$", input_vector2):
+            tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") ##Later skip this check if input_vector1=="DON"
             return
         seller_window.destroy()
     button = ttk.Button(seller_window, text="Save", command=val_inputs_reg)
