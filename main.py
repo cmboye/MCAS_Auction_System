@@ -28,18 +28,32 @@ def reg_window(): ##Window opened when registering sellers
     def val_inputs_reg(): ##Define the function to save registration screen inputs
         input_vector1 = entry1.get()
         input_vector2 = entry2.get()
-        if not input_vector1 or not input_vector2: ##Basic error handling... next I will add checking the formatting of the entries
+        if not input_vector1 or not input_vector2: ##Basic error handling
             tkinter.messagebox.showinfo("Error", "Please fill in both input fields.")
             return
-        while not re.match("[-a-zA-Z ]{1,3}", input_vector1):
-            tkinter.messagebox.showinfo("Error", "Seller ID must be 1-3 letters.") ##The 1-3 length seems to not be working here
+        while not re.match("^[-a-zA-Z ]{1,3}$", input_vector1):
+            tkinter.messagebox.showinfo("Error", "Seller ID must be 1-3 letters.") ##Require 1-3 letters
             return
-        while not re.match("^([1-9]|[1-4]\d|50)$", input_vector2):
-            tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") ##Later skip this check if input_vector1=="DON"
-            return
+        if re.search(input_vector1,"DON",re.IGNORECASE): ##ignore case
+            while not re.match("^[1-9][0-9]*$", input_vector2): ##If DON, require a number >0 (may have >50 donations)
+                tkinter.messagebox.showinfo("Error", "Bag count must be a number >0. Please do not enter leading 0s")
+                return
+        else:
+            while not re.match("^([1-9]|[1-4]\\d|50)$", input_vector2):
+                tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
+                return
+        ##If they pass error handling, append vectors to some globally defined vectors? Or add as rows for a df. These should also create however many rows for the bag IDs, etc.
         seller_window.destroy()
+
     button = ttk.Button(seller_window, text="Save", command=val_inputs_reg)
     button.pack()
+
+def data_window(): ##Window opened when viewing auction data: look into pandastable
+    seller_window = Toplevel(root)
+    seller_window.title("Current auction data")
+    seller_window.geometry("300x200")  ##Set the size of the new window
+    label1 = Label(seller_window, image = patt)
+    label1.place(x = 0, y = 0)
 
 root = Tk()
 #root.bind("<Return>", returnPressed)  ##Later I need to add something like this to make enter key work
@@ -56,7 +70,7 @@ s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
 ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0) ##Ideally I will later remove this from grid
 ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
 ttk.Button(frm, text="Start auction", command=root.destroy).grid(column=3, row=0)
-ttk.Button(frm, text="View data", command=root.destroy).grid(column=4, row=0)
+ttk.Button(frm, text="View data", command=data_window).grid(column=4, row=0)
 ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
 ttk.Button(frm, text="Pay sellers", command=root.destroy).grid(column=6, row=0)
 ttk.Button(frm, text="Save auction", command=root.destroy).grid(column=7, row=0)
