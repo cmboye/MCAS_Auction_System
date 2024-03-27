@@ -1,3 +1,5 @@
+##TO DO: Enable updating the bag count without overwriting any pre-entered data
+
 #MCAS system with GUI written by CB 3/6/24.
 #Check for packages needed and download if not available
 import importlib.util
@@ -11,6 +13,9 @@ if spec is None:
 from tkinter import *
 import tkinter.messagebox
 from tkinter import ttk
+bags = [] ##Init variable to store bags
+price = [] ##Init variable to store sale prices
+buyer = [] ##Init variable to store buyer
 def reg_window(): ##Window opened when registering sellers
     seller_window = Toplevel(root)
     seller_window.title("Register Seller")
@@ -42,18 +47,76 @@ def reg_window(): ##Window opened when registering sellers
             while not re.match("^([1-9]|[1-4]\\d|50)$", input_vector2):
                 tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
                 return
-        ##If they pass error handling, append vectors to some globally defined vectors? Or add as rows for a df. These should also create however many rows for the bag IDs, etc.
+        global bags ##Make the variable global
+        ids = [input_vector1 + "-" + str(i) for i in range(1, int(input_vector2) + 1)] ##If they pass error handling, populate all bags for that seller
+        bags.extend(ids) ##Keep a list of all bags across all sellers
         seller_window.destroy()
 
     button = ttk.Button(seller_window, text="Save", command=val_inputs_reg)
     button.pack()
 
-def data_window(): ##Window opened when viewing auction data: look into pandastable
+def data_window(): ##Window opened when viewing auction data
+    data_window = Toplevel()
+    data_window.title("Auction Data")
+    tree = ttk.Treeview(data_window,columns=("bags"), show='headings')#, "Seller IDs", "Number")) ##Display
+    tree.heading("bags", text="Bag IDs")
+    #tree.heading("Vector 2", text="Vector 2")
+    for i, (v1) in enumerate(zip(bags)): #for i, (v1, v2) in enumerate(zip(bags, vector2)):
+        tree.insert("", "end", text=str(i), values=(v1))#, v2))
+    tree.grid(pady=5)
+    close_button = Button(data_window, text="Close", command=data_window.destroy)
+    close_button.grid(row=1, column=0, padx=5, pady=5)
+    data_window.mainloop()
+
+def auction_window():
     seller_window = Toplevel(root)
-    seller_window.title("Current auction data")
+    seller_window.title("Enter auction sales")
     seller_window.geometry("300x200")  ##Set the size of the new window
     label1 = Label(seller_window, image = patt)
     label1.place(x = 0, y = 0)
+    sell_ID = StringVar() ##Take input and save
+    bag = StringVar() ##Take input and save
+    prc = StringVar() ##Take input and save
+    byr = StringVar() ##Take input and save
+    ttk.Label(auction_window, text="Seller ID:").pack(pady=10)
+    entry1=Entry(auction_window, textvariable=sell_ID)
+    entry1.pack()
+    ttk.Label(auction_window, text="Bag number:").pack(pady=10)
+    entry2=Entry(auction_window, textvariable=bag)
+    entry2.pack()
+    ttk.Label(auction_window, text="Price:").pack(pady=10)
+    entry3=Entry(auction_window, textvariable=prc)
+    entry3.pack()
+    ttk.Label(auction_window, text="Buyer:").pack(pady=10)
+    entry4=Entry(auction_window, textvariable=byr)
+    entry4.pack()
+
+    def val_inputs_enter(): ##Define the function to save registration screen inputs
+        input_vector1 = entry1.get()
+        input_vector2 = entry2.get()
+        input_vector3 = entry3.get()
+        input_vector4 = entry4.get()
+        if not input_vector1 or not input_vector2 or not input_vector3: ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please fill in input fields 1-3.")
+            return
+        while not re.match("^[-a-zA-Z ]{1,3}$", input_vector1):
+            tkinter.messagebox.showinfo("Error", "Seller ID must be 1-3 letters.") ##Require 1-3 letters
+            return
+        if re.search(input_vector1,"DON",re.IGNORECASE): ##ignore case
+            while not re.match("^[1-9][0-9]*$", input_vector2): ##If DON, require a number >0 (may have >50 donations)
+                tkinter.messagebox.showinfo("Error", "Bag count must be a number >0. Please do not enter leading 0s")
+                return
+        else:
+            while not re.match("^([1-9]|[1-4]\\d|50)$", input_vector2):
+                tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
+                return
+        ##If price >99 display warning (best if I can do this without opening a new window for minimal disruption)
+        ##Check buyer number is blank or a 3 digit number (allow leading 0s)
+        ##Match bag IDs and add price, buyer
+        seller_window.destroy()
+
+    button = ttk.Button(auction_window, text="Save", command=val_inputs_enter)
+    button.pack()
 
 root = Tk()
 #root.bind("<Return>", returnPressed)  ##Later I need to add something like this to make enter key work
@@ -67,9 +130,9 @@ label2.place(x = 0, y = 0)
 frm = ttk.Frame(root, padding=10)
 frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
-ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0) ##Ideally I will later remove this from grid
+ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0)
 ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
-ttk.Button(frm, text="Start auction", command=root.destroy).grid(column=3, row=0)
+ttk.Button(frm, text="Start auction", command=auction_window).grid(column=3, row=0)
 ttk.Button(frm, text="View data", command=data_window).grid(column=4, row=0)
 ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
 ttk.Button(frm, text="Pay sellers", command=root.destroy).grid(column=6, row=0)
