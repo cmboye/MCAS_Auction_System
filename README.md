@@ -1,5 +1,6 @@
 # MCAS Auction system
 ## Instructions for basic usage
+Please see below. Also note that generally tab should move the cursor to the next entry field, and enter/return will attempt to save the information entered by the user.
 ### Adding new sellers
 1. Click the 'New seller' button (or skip directly to seller registration, see below).
 2. Enter seller information, and the program will display an automatically-generated seller ID.
