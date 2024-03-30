@@ -1,9 +1,10 @@
-##TO DO: Enable updating the bag count without overwriting any pre-entered data
+##TO DO: Enable updating the bag count without overwriting any pre-entered data, >$99 warning, conversion of all strings to upper, show error if bag ID doesn't exist
 
 #MCAS system with GUI written by CB 3/6/24.
 #Check for packages needed and download if not available
 import importlib.util
 import re
+import pandas as pd
 package_name = 'tkinter' ##Check if needed packages are available
 spec = importlib.util.find_spec(package_name) ##Can I check multiple at once?
 if spec is None:
@@ -14,8 +15,7 @@ from tkinter import *
 import tkinter.messagebox
 from tkinter import ttk
 bags = [] ##Init variable to store bags
-price = [] ##Init variable to store sale prices
-buyer = [] ##Init variable to store buyer
+df2 = pd.DataFrame(columns=['Bag ID', 'Price', 'Buyer']) ##Init variable to store auction info
 def reg_window(): ##Window opened when registering sellers
     seller_window = Toplevel(root)
     seller_window.title("Register Seller")
@@ -58,21 +58,26 @@ def reg_window(): ##Window opened when registering sellers
 def data_window(): ##Window opened when viewing auction data
     data_window = Toplevel()
     data_window.title("Auction Data")
-    tree = ttk.Treeview(data_window,columns=("bags"), show='headings')#, "Seller IDs", "Number")) ##Display
+    tree = ttk.Treeview(data_window,columns=("bags", "price", "buyer"), show='headings')#, "Seller IDs", "Number")) ##Display
     tree.heading("bags", text="Bag IDs")
-    #tree.heading("Vector 2", text="Vector 2")
-    for i, (v1) in enumerate(zip(bags)): #for i, (v1, v2) in enumerate(zip(bags, vector2)):
-        tree.insert("", "end", text=str(i), values=(v1))#, v2))
+    tree.heading("price", text="Price")
+    tree.heading("buyer", text="Buyer")
+    df1 = pd.DataFrame({'Bag ID': bags})
+    df1['Bag ID'] = df1['Bag ID'].astype(str)##Force keys to both be strings
+    df2['Bag ID'] = df2['Bag ID'].astype(str)
+    df3 = df1.merge(df2, on='Bag ID',how='left') ##Match bag IDs and add price, buyer
+    for i, row in df3.iterrows(): ##Then need to convert back to vectors for treeview
+        tree.insert("", tkinter.END, text=str(i), values=row.tolist())
     tree.grid(pady=5)
     close_button = Button(data_window, text="Close", command=data_window.destroy)
     close_button.grid(row=1, column=0, padx=5, pady=5)
     data_window.mainloop()
 
 def auction_window():
-    seller_window = Toplevel(root)
-    seller_window.title("Enter auction sales")
-    seller_window.geometry("300x200")  ##Set the size of the new window
-    label1 = Label(seller_window, image = patt)
+    auction_window = Toplevel(root)
+    auction_window.title("Enter auction sales")
+    auction_window.geometry("300x400")  ##Set the size of the new window
+    label1 = Label(auction_window, image = patt)
     label1.place(x = 0, y = 0)
     sell_ID = StringVar() ##Take input and save
     bag = StringVar() ##Take input and save
@@ -110,10 +115,19 @@ def auction_window():
             while not re.match("^([1-9]|[1-4]\\d|50)$", input_vector2):
                 tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
                 return
+        bag_id = input_vector1 + "-" + str(input_vector2) ##If seller ID and bag number pass error handling, then concatenate
         ##If price >99 display warning (best if I can do this without opening a new window for minimal disruption)
-        ##Check buyer number is blank or a 3 digit number (allow leading 0s)
-        ##Match bag IDs and add price, buyer
-        seller_window.destroy()
+        if input_vector4 == "": ##Check buyer number is blank or a 3 digit number (allow leading 0s)
+            buyer.extend("Cash")##Save
+        elif not input_vector4.isdigit() or len(input_vector4) != 3:
+            tkinter.messagebox.showinfo("Error", "Please enter a 3 digit number or leave blank.")
+            return
+        else:
+            buyer.extend(input_vector4)##Save
+        global df2
+        new_row = {'Bag ID': bag_id, 'Price': input_vector3,'Buyer': input_vector4}
+        df2 = pd.concat([df2, pd.DataFrame([new_row])], ignore_index=True)##Put all user entry info into a df
+        auction_window.destroy() ##Later want this to just clear inputs
 
     button = ttk.Button(auction_window, text="Save", command=val_inputs_enter)
     button.pack()
