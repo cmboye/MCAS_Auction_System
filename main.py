@@ -1,4 +1,4 @@
-##TO DO: Updating the bag count without overwriting any pre-entered data (in reg window), total sales isn't summing right??, club sales not calc right
+##TO DO: View screen need to add scroll bar and longer/variable window size; fix load auction files, check save sellers and make default to load sellers. Keep 1 seller file? Then work on new/find seller screen
 
 #MCAS system with GUI written by CB 3/6/24.
 required_packages = ['tkinter', 're', 'pandas','numpy'] #Check for packages needed
@@ -11,12 +11,15 @@ import importlib.util #Import libs
 import re
 import pandas as pd
 import numpy as np
+import os
 
 #Configure GUI:
 from tkinter import *
+from tkinter import filedialog
 import tkinter.messagebox
 from tkinter import ttk
 bags = [] ##Init variable to store bags
+auc_club_tot = 0 ##Init variable to store club total
 df2 = pd.DataFrame(columns=['Bag ID', 'Price', 'Buyer']) ##Init variable to store auction info
 club_dollar=1
 club_prc=.30
@@ -59,7 +62,10 @@ def reg_window(): ##Window opened when registering sellers
                 return
         global bags ##Make the variable global
         ids = [input_vector1 + "-" + str(i) for i in range(1, int(input_vector2) + 1)] ##If they pass error handling, populate all bags for that seller
-        bags.extend(ids) ##Keep a list of all bags across all sellers
+        idst = set(ids)
+        bagst = set(bags)
+        bagst.update(idst) ##Only keep unique IDs
+        bags = list(bagst) ##Keep a list of all bags across all sellers
         seller_window.destroy()
 
     button = ttk.Button(seller_window, text="Save", command=val_inputs_reg)
@@ -81,7 +87,13 @@ def data_window(): ##Window opened when viewing auction data
     df1['Bag ID'] = df1['Bag ID'].astype(str)##Force keys to both be strings
     df2['Bag ID'] = df2['Bag ID'].astype(str)
     df3 = df1.merge(df2, on='Bag ID',how='left') ##Match bag IDs and add price, buyer
-    for i, row in df3.iterrows(): ##Then need to convert back to vectors for treeview
+    df3['Alpha'] = df3['Bag ID'].str.extract('([a-zA-Z]+)')##Idea for sorting without leading 0s: extract alphabetical part and numeric part into new cols. sort by alpha then numeric. sort accordingly, then remove columns
+    df3['Num'] = df3['Bag ID'].str.extract('(\d+)')
+    df3['Num'] = df3['Num'].str.zfill(2)
+    df3['Num'] = df3['Num'].astype(int)
+    df_sorted = df3.sort_values(by=['Alpha', 'Num'])
+    df_sorted.drop(columns=['Alpha', 'Num'], inplace=True)
+    for i, row in df_sorted.iterrows(): ##Then need to convert back to vectors for treeview
         tree.insert("", tkinter.END, text=str(i), values=row.tolist())
     tree.grid(pady=5)
     close_button = Button(data_window, text="Close", command=data_window.destroy)
@@ -92,7 +104,7 @@ def auction_window():
     auction_window = Toplevel(root)
     auction_window.iconbitmap("mcas.ico")
     auction_window.title("Enter auction sales")
-    auction_window.geometry("300x400")  ##Set the size of the new window
+    auction_window.geometry("300x450")  ##Set the size of the new window
     label1 = Label(auction_window, image = patt)
     label1.place(x = 0, y = 0)
     auction_window.attributes('-topmost', 'true')
@@ -112,20 +124,16 @@ def auction_window():
     ttk.Label(auction_window, text="Buyer:").pack(pady=10)
     entry4=Entry(auction_window, textvariable=byr)
     entry4.pack()
-    lab1=ttk.Label(auction_window,text="Total sales: Enter a bag to start counter")##Display totals in auction window
-    lab1.pack(pady=10)
-    lab2=ttk.Label(auction_window,text="Club sales: Enter a bag to start counter")
-    lab2.pack(pady=10)
-    lab3=ttk.Label(auction_window,text="Entered bag count: Enter a bag to start counter")
-    lab3.pack(pady=10)
-    lab4=ttk.Label(auction_window,text="Total bag count: Enter a bag to start counter")
-    lab4.pack(pady=10)
     def val_inputs_enter(): ##Define the function to save registration screen inputs
         input_vector1 = entry1.get().upper()
         input_vector2 = entry2.get()
         input_vector3 = entry3.get()
         input_vector4 = entry4.get()
         global df2
+        global auc_club_tot
+        global auc_enter_bag
+        global auc_tot
+        global auc_tot_bag
         if not input_vector1 or not input_vector2 or not input_vector3: ##Basic error handling
             tkinter.messagebox.showinfo("Error", "Please fill in input fields 1-3.")
             return
@@ -161,25 +169,35 @@ def auction_window():
             return
         else:
             input_vector4=(input_vector4)##Save
-        new_row = {'Bag ID': bag_id, 'Price': input_vector3,'Buyer': input_vector4}
+        new_row = {'Bag ID': bag_id, 'Price': float(input_vector3),'Buyer': input_vector4}
         df2 = pd.concat([df2, pd.DataFrame([new_row])], ignore_index=True)##Put all user entry info into a df
         sell_ID.set("") # Clear entry fields after saving
         bag.set("")
         prc.set("")
         byr.set("")
-        auc_tot=np.nansum(df2['Price']).values##Calculate metrics in an easy-to-update way
-        if int(input_vector3)*int(club_prc) < int(club_dollar):
-            auc_mcas_prc=club_dollar
+        auc_tot=df2['Price'].fillna(0).sum()##Calculate metrics in an easy-to-update way
+        if float(input_vector3)*club_prc < club_dollar:
+            auc_mcas_prc=round(club_dollar,2)
         else:
-            auc_mcas_prc=df2['Price']*club_prc
+            auc_mcas_prc=round(float(input_vector3)*club_prc,2)
+        auc_club_tot += auc_mcas_prc
         auc_enter_bag=len(df2['Bag ID'])
         auc_tot_bag=len(bags)
-        lab1.config(text="Total sales: "+str(auc_tot))
-        lab2.config(text="Club sales: " +str(auc_mcas_prc))
+        lab1.config(text="Total sales: $"+str(auc_tot))
+        lab2.config(text="Club sales: $" +str(auc_club_tot))
         lab3.config(text="Entered bag count: " +str(auc_enter_bag))
         lab4.config(text="Total bag count: " +str(auc_tot_bag))
         return
 
+    ttk.Button(auction_window, text="Save", command=val_inputs_enter).pack(pady=10)
+    lab1=ttk.Label(auction_window,text="Total sales: Enter a bag to start counter")##Display totals in auction window
+    lab1.pack(pady=10)
+    lab2=ttk.Label(auction_window,text="Club sales: Enter a bag to start counter")
+    lab2.pack(pady=10)
+    lab3=ttk.Label(auction_window,text="Entered bag count: Enter a bag to start counter")
+    lab3.pack(pady=10)
+    lab4=ttk.Label(auction_window,text="Total bag count: Enter a bag to start counter")
+    lab4.pack(pady=10)
     entry1.bind('<Return>', lambda event=None: val_inputs_enter())
     entry2.bind('<Return>', lambda event=None: val_inputs_enter())
     entry3.bind('<Return>', lambda event=None: val_inputs_enter())
@@ -188,11 +206,73 @@ def auction_window():
     entry2.bind('<Tab>', focus_next_entry)
     entry3.bind('<Tab>', focus_next_entry)
     entry4.bind('<Tab>', focus_next_entry)
-    ttk.Button(auction_window, text="Save", command=val_inputs_enter).pack(pady=10)
     return
 
+def save_window():
+    save_window = Toplevel(root)
+    save_window.iconbitmap("mcas.ico")
+    save_window.title("Save auction data")
+    save_window.geometry("300x200")  ##Set the size of the new window
+    label1 = Label(save_window, image = patt)
+    label1.place(x = 0, y = 0)
+    save_window.attributes('-topmost', 'true')
+    auc_time = StringVar() ##Take input and save
+    yr = StringVar() ##Take input and save
+    ttk.Label(save_window, text="Fall or Winter auction? (used in save file name):").pack(pady=10)
+    entry1=Entry(save_window, textvariable=auc_time)
+    entry1.pack()
+    ttk.Label(save_window, text="Year (used in save file name):").pack(pady=10)
+    entry2=Entry(save_window, textvariable=yr)
+    entry2.pack()
+    def val_inputs_save():
+        input_vector1 = entry1.get().lower()
+        input_vector2 = entry2.get()
+        if not input_vector1 or not input_vector2: ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please fill in both input fields.")
+            return
+        if not input_vector1.isalpha() : ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please enter letters only for fall/winter.")
+            return
+        if not input_vector2.isdigit() : ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please enter numbers only for year.")
+            return
+        df1 = pd.DataFrame({'Bag ID': bags})
+        df1['Bag ID'] = df1['Bag ID'].astype(str)##Force keys to both be strings
+        df2['Bag ID'] = df2['Bag ID'].astype(str)
+        df3 = df1.merge(df2, on='Bag ID',how='left') ##Match bag IDs and add price, buyer
+        df3['Alpha'] = df3['Bag ID'].str.extract('([a-zA-Z]+)')
+        df3['Num'] = df3['Bag ID'].str.extract('(\d+)')
+        df3['Num'] = df3['Num'].str.zfill(2)
+        df3['Num'] = df3['Num'].astype(int)
+        df_sorted = df3.sort_values(by=['Alpha', 'Num'])
+        df_sorted.drop(columns=['Alpha', 'Num'], inplace=True)##Reconstruct df_sorted
+        fpath = input_vector1 + str(input_vector2) + ".tsv"
+        complete_path = os.path.join(os.path.expanduser('~'), 'Documents', fpath)
+        df_sorted.to_csv(complete_path, sep='\t', index=False)##Save with winter/fall and year
+        tkinter.messagebox.showinfo("Success", "Auction file successfully saved as " + complete_path)
+        save_window.destroy()
+
+    ttk.Button(save_window, text="Save", command=val_inputs_save).pack(pady=10)
+    entry1.bind('<Return>', lambda event=None: val_inputs_save())
+    entry2.bind('<Return>', lambda event=None: val_inputs_save())
+    entry1.bind('<Tab>', focus_next_entry)
+    entry2.bind('<Tab>', focus_next_entry)
+
+def load_file():
+    global df2
+    global bags
+    doc_folder = os.path.join(os.path.expanduser('~'), 'Documents')
+    filep = filedialog.askopenfilename(initialdir=doc_folder)
+    try:
+        with open(filep, 'r') as file:
+            df2 = file.read()
+            tkinter.messagebox.showinfo("Success", f"File '{filep}' loaded.")
+    except FileNotFoundError:
+        tkinter.messagebox.showinfo("Error", f"File '{filep}' not found.")
+    bags=df2['Bag ID']
+
 def quit_confirmation():
-    msg_box = tk.messagebox.askquestion("Exit", "Are you sure you want to exit?",icon="warning")
+    msg_box = tkinter.messagebox.askquestion("Exit", "Are you sure you want to exit? Please make sure you saved first.",icon="warning")
     if msg_box == "yes":
      root.destroy()
 
@@ -210,11 +290,12 @@ frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
 ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0)
 ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
-ttk.Button(frm, text="Start auction", command=auction_window).grid(column=3, row=0)
+ttk.Button(frm, text="Auction entry", command=auction_window).grid(column=3, row=0)
 ttk.Button(frm, text="View data", command=data_window).grid(column=4, row=0)
 ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
 ttk.Button(frm, text="Pay sellers", command=root.destroy).grid(column=6, row=0)
-ttk.Button(frm, text="Save auction", command=root.destroy).grid(column=7, row=0)
+ttk.Button(frm, text="Load auction", command=load_file).grid(column=7, row=0)
+ttk.Button(frm, text="Save auction", command=save_window).grid(column=8, row=0)
 ttk.Button(frm, text="Quit", command=quit_confirmation).grid(column=9, row=0) ##Button to exit program... need to add warning
 root.mainloop()
 
