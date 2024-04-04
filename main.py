@@ -1,4 +1,4 @@
-##TO DO: View screen need to add scroll bar and longer/variable window size; fix load auction files, check save sellers and make default to load sellers. Keep 1 seller file? Then work on new/find seller screen
+##TO DO: check save sellers and make default to load sellers. Keep 1 seller file? Then work on new/find seller screen
 
 #MCAS system with GUI written by CB 3/6/24.
 required_packages = ['tkinter', 're', 'pandas','numpy'] #Check for packages needed
@@ -12,6 +12,7 @@ import re
 import pandas as pd
 import numpy as np
 import os
+import random
 
 #Configure GUI:
 from tkinter import *
@@ -23,6 +24,7 @@ auc_club_tot = 0 ##Init variable to store club total
 df2 = pd.DataFrame(columns=['Bag ID', 'Price', 'Buyer']) ##Init variable to store auction info
 club_dollar=1
 club_prc=.30
+
 def focus_next_entry(event):
     event.widget.tk_focusNext().focus()
     return "break"
@@ -79,10 +81,14 @@ def data_window(): ##Window opened when viewing auction data
     data_window = Toplevel()
     data_window.iconbitmap("mcas.ico")
     data_window.title("Auction Data")
+    data_window.geometry("600x800")
     tree = ttk.Treeview(data_window,columns=("bags", "price", "buyer"), show='headings')#, "Seller IDs", "Number")) ##Display
     tree.heading("bags", text="Bag IDs")
     tree.heading("price", text="Price")
     tree.heading("buyer", text="Buyer")
+    scrollbar = Scrollbar(data_window, orient="vertical", command=tree.yview)
+    scrollbar.pack(side="right", fill="y")
+    tree.configure(yscrollcommand=scrollbar.set)
     df1 = pd.DataFrame({'Bag ID': bags})
     df1['Bag ID'] = df1['Bag ID'].astype(str)##Force keys to both be strings
     df2['Bag ID'] = df2['Bag ID'].astype(str)
@@ -95,9 +101,9 @@ def data_window(): ##Window opened when viewing auction data
     df_sorted.drop(columns=['Alpha', 'Num'], inplace=True)
     for i, row in df_sorted.iterrows(): ##Then need to convert back to vectors for treeview
         tree.insert("", tkinter.END, text=str(i), values=row.tolist())
-    tree.grid(pady=5)
+    tree.pack(pady=5, padx=5, expand=True, fill="both")
     close_button = Button(data_window, text="Close", command=data_window.destroy)
-    close_button.grid(row=1, column=0, padx=5, pady=5)
+    close_button.pack(side="bottom", pady=5)
     data_window.mainloop()
 
 def auction_window():
@@ -149,8 +155,9 @@ def auction_window():
                 tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
                 return
         if (input_vector1 + "-" + str(input_vector2)) in df2['Bag ID'].values: ##Double-check that bag information has not already been entered
-            tkinter.messagebox.showinfo("Error", "Information has already been entered for this bag ID.")
-            return
+            row = df2[df2['Bag ID'] == input_vector1 + "-" + str(input_vector2)]
+            if (pd.notna(row['Price'].iloc[0])):
+                tkinter.messagebox.showinfo("Error", "Information has already been entered for this bag ID.")
         bag_id = input_vector1 + "-" + str(input_vector2) ##If seller ID and bag number pass error handling, then concatenate
         if not bag_id in bags: ##Now check bag ID has already been registered
             tkinter.messagebox.showinfo("Error", "Entered bag information does not exist. Was buyer registered for the number of items?") ##Later I could force new entries to be added to bags. Maybe that is better?
@@ -265,11 +272,11 @@ def load_file():
     filep = filedialog.askopenfilename(initialdir=doc_folder)
     try:
         with open(filep, 'r') as file:
-            df2 = file.read()
+            df2 = pd.read_csv(filep, delimiter='\t', na_values='')
             tkinter.messagebox.showinfo("Success", f"File '{filep}' loaded.")
     except FileNotFoundError:
         tkinter.messagebox.showinfo("Error", f"File '{filep}' not found.")
-    bags=df2['Bag ID']
+    bags=df2['Bag ID'].tolist()
 
 def quit_confirmation():
     msg_box = tkinter.messagebox.askquestion("Exit", "Are you sure you want to exit? Please make sure you saved first.",icon="warning")
@@ -289,6 +296,7 @@ frm = ttk.Frame(root, padding=10)
 frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
 ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0)
+ttk.Button(frm, text="New seller", command=root.destroy).grid(column=1, row=0)
 ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
 ttk.Button(frm, text="Auction entry", command=auction_window).grid(column=3, row=0)
 ttk.Button(frm, text="View data", command=data_window).grid(column=4, row=0)
@@ -296,7 +304,8 @@ ttk.Button(frm, text="Cash out", command=root.destroy).grid(column=5, row=0)
 ttk.Button(frm, text="Pay sellers", command=root.destroy).grid(column=6, row=0)
 ttk.Button(frm, text="Load auction", command=load_file).grid(column=7, row=0)
 ttk.Button(frm, text="Save auction", command=save_window).grid(column=8, row=0)
-ttk.Button(frm, text="Quit", command=quit_confirmation).grid(column=9, row=0) ##Button to exit program... need to add warning
+ttk.Button(frm, text="Settings", command=root.destroy).grid(column=9, row=0)
+ttk.Button(frm, text="Quit", command=quit_confirmation).grid(column=10, row=0) ##Button to exit program...
 root.mainloop()
 
 #Below is a bunch of pseudocode and notes:
@@ -304,29 +313,20 @@ root.mainloop()
 seller_info=read.csv('seller_info.csv') #This contains seller information from previous auctions. This information will be printed as a header in the seller's payout summary
 
 #Set defaults for variables that are customizable
-bag_limit=50
-dollar_amnt=1
-club_percent=0.30
-seller_ID_pattern="[A-Z]"[1-3] #Should be an uppercase number 1-3 digits long
-buyer_n_pattern="%03d" #Require buyer number to be three digits?
-
-#Reset items with each auction
-auction_file=input()##Enter name of auction file
-if{any(list.files==auction_file, read.csv(auction_file.csv),else(write.file(auction_file.csv)))} ##Check if it exists, if not initialize a new file (which will reset number of seller items)
 
 #Init new seller
 ##Function that automatically generates new seller ID
-sellid_fun=function(f,l){
-str_extract(f,1,l,2) ##First letter in first name, 2 letters in last name
-##Check that it is 1-3 letters and that it does not match an existing entry
-str_extract(f,2,l,1) ##First 2 letters in first name, 1 letter in last name
-str_extract(f,3) ##First 3 letters in first name
-str_extract(l,3) ##First 3 letters in last name
-paste(random(paste(f,l),3)) ##Random 3 letters in name
-paste(random([A-Z]),3) ##Random 3 letters
-##Make sure I convert seller ID to uppercase
-return(sell_ID)
-}
+#Do I need to import random?
+def generate_random_id(first_name, last_name,existing_ids):
+    first_initial = first_name[0].upper() ##Prioritize first letters to make it memorable
+    last_initial = last_name[0].upper()
+    while True:
+        random_letters = [random.choice(first_initial+last_initial)]
+        random_letters += [random.choice(first_name+last_name) for _ in range(random.randint(0, 2))]
+        random_id = ''.join(random_letters).upper()
+        if random_id not in existing_ids:
+            return(random_id)
+
 ##Need multiple inputs here: first/last, address, phone number, email, number of items
 f=input('First name: ')
 l=input('Last name: ')
@@ -347,17 +347,13 @@ if(sellertemp=NULL, fltemp=paste(ftemp,ltemp), str_extract(fltemp,paste(first,la
 ##If there are multiple matches, how do I let user choose? Also, be sure to PROMPT if user wants to add new seller (Y/N) button; best if I can autofill first/last?
 ##Need to make sure new sellers are automatically saved?
 
-#Init system to log auction sales. Need a good way to start/end files? Also, be sure to convert seller ID string to uppercase only
-
 #Init billing system (summarize table by buyer number)
-ttk.Button(frm, text="Cash out", command=).grid(column=1, row=0) ##Create button in main GUI to open this menu
 ##How was this done before? Do I create a unique list of seller IDs and auto-print each??? Might make this is a sub-menu or something... Maybe also make a user-friendly way to cancel printing?
 buytemp=input('Buyer number: ')##Enter the buyer number
 return(subset(df,df$buyer_number==buytemp)) ##Return certain information for this buyer
 ##Need to create an easy way to have this interact with the printer
 
 #Init seller payout system:
-ttk.Button(frm, text="Pay sellers", command=).grid(column=1, row=0) ##Create button to open the prompt for the payout system
 selltemp=input('Seller number: ')##Enter seller ID
 y=subset(df,df$sell_ID==selltemp)
 seller_payout=y$price-y$club_sales ##Seller will get the raw price minus the club's share
@@ -366,7 +362,3 @@ seller_payout=y$price-y$club_sales ##Seller will get the raw price minus the clu
 
 #Configure printing:
 ##https://stackoverflow.com/questions/30329924/how-to-print-directly-without-showing-print-dialog-using-python-script-in-window
-
-#Save auction file
-ttk.Button(frm, text="Save auction", command=).grid(column=1, row=0) ##Create a save button such that you can save the current auction df, try to avoid any overwrite prompts
-write.table(df,file="") ##Save file as auction_file.csv
