@@ -1,4 +1,4 @@
-##TO DO: check save sellers and make default to load sellers. Keep 1 seller file? Then work on new/find seller screen
+##TO DO: check save sellers and make default to load sellers. Work on new/find seller screen, seller and buyer checkouts
 
 #MCAS system with GUI written by CB 3/6/24.
 required_packages = ['tkinter', 're', 'pandas','numpy'] #Check for packages needed
@@ -25,9 +25,84 @@ df2 = pd.DataFrame(columns=['Bag ID', 'Price', 'Buyer']) ##Init variable to stor
 club_dollar=1
 club_prc=.30
 
+def load_data(file_path): ##Before anything, read seller file if present:
+        dat = pd.read_csv(file_path)
+        return dat
+file_path = os.path.join(os.path.expanduser('~'),'Documents','seller_info.tsv'
+slrs = load_data(file_path)
+
 def focus_next_entry(event):
     event.widget.tk_focusNext().focus()
     return "break"
+
+def new_window(): ##Window opened when registering sellers
+    new_window = Toplevel(root)
+    new_window.iconbitmap("mcas.ico")
+    new_window.title("New Seller")
+    new_window.geometry("300x800")  ##Set the size of the new window
+    label1 = Label(new_window, image = patt)
+    label1.place(x = 0, y = 0)
+    new_window.attributes('-topmost', 'true')
+    frst = StringVar() ##Take input and save
+    lst = StringVar()
+    addr = StringVar()
+    st = StringVar()
+    zip = StringVar()
+    phn = StringVar()
+    email = StringVar()
+    bag_count = StringVar()
+    ttk.Label(new_window, text="First name:").pack(pady=10)
+    entry1=Entry(new_window, textvariable=frst)
+    entry1.pack()
+    ttk.Label(new_window, text="Last name:").pack(pady=10)
+    entry2=Entry(new_window, textvariable=lst)
+    entry2.pack()
+    ttk.Label(new_window, text="Address:").pack(pady=10)
+    entry3=Entry(new_window, textvariable=addr)
+    entry3.pack()
+    ttk.Label(new_window, text="State:").pack(pady=10)
+    entry4=Entry(new_window, textvariable=st)
+    entry4.pack()
+    ttk.Label(new_window, text="Zip code:").pack(pady=10)
+    entry5=Entry(new_window, textvariable=zip)
+    entry5.pack()
+    ttk.Label(new_window, text="Phone:").pack(pady=10)
+    entry6=Entry(new_window, textvariable=phn)
+    entry6.pack()
+    ttk.Label(new_window, text="E-mail:").pack(pady=10)
+    entry7=Entry(new_window, textvariable=email)
+    entry7.pack()
+    ttk.Label(new_window, text="Bag count:").pack(pady=10)
+    entry8=Entry(new_window, textvariable=bag_count)
+    entry8.pack()
+    def val_inputs_new():
+        ##TO-DO: Error handling- make sure all fields filled. Also make sure to convert all names to upper
+        ###More error handing: names, state should only be a-z and zip code 5 digits and phone number only digits. email should contain @ and .
+        def generate_random_id(first_name, last_name, existing_ids):
+            first_initial = first_name[0].upper() ##Prioritize first letters to make it memorable
+            last_initial = last_name[0].upper()
+            while True:
+                random_letters = [random.choice(first_initial+last_initial)]
+                random_letters += [random.choice(first_name+last_name) for _ in range(random.randint(0, 2))]
+                random_id = ''.join(random_letters).upper()
+                if random_id not in existing_ids:
+                    return(random_id)
+
+        global bags ##Make the variable global
+        ids = [input_vector1 + "-" + str(i) for i in range(1, int(input_vector2) + 1)] ##If they pass error handling, populate all bags for that seller
+        idst = set(ids)
+        bagst = set(bags)
+        bagst.update(idst) ##Only keep unique IDs
+        bags = list(bagst) ##Keep a list of all bags across all sellers
+        ##Write this info to seller_info.csv
+        new_window.destroy()
+
+    button = ttk.Button(new_window, text="Save", command=val_inputs_new)
+    entry2.bind('<Return>', lambda event=None: val_inputs_new())
+    entry2.bind('<Return>', lambda event=None: val_inputs_new())
+    entry1.bind('<Tab>', focus_next_entry)
+    entry2.bind('<Tab>', focus_next_entry)
+    button.pack()
 
 def reg_window(): ##Window opened when registering sellers
     seller_window = Toplevel(root)
@@ -45,6 +120,7 @@ def reg_window(): ##Window opened when registering sellers
     ttk.Label(seller_window, text="Bag count:").pack(pady=10)
     entry2=Entry(seller_window, textvariable=bag_count)
     entry2.pack()
+    ##Add a button to search for seller ID if needed, maybe also add new seller button here?
     def val_inputs_reg(): ##Define the function to save registration screen inputs
         input_vector1 = entry1.get().upper()
         input_vector2 = entry2.get()
@@ -256,6 +332,7 @@ def save_window():
         fpath = input_vector1 + str(input_vector2) + ".tsv"
         complete_path = os.path.join(os.path.expanduser('~'), 'Documents', fpath)
         df_sorted.to_csv(complete_path, sep='\t', index=False)##Save with winter/fall and year
+        slrs.to_csv(os.path.join(os.path.expanduser('~'),'Documents','seller_info.tsv'),sep='\t', index=False)##Add something here to also save seller files
         tkinter.messagebox.showinfo("Success", "Auction file successfully saved as " + complete_path)
         save_window.destroy()
 
@@ -313,29 +390,6 @@ root.mainloop()
 seller_info=read.csv('seller_info.csv') #This contains seller information from previous auctions. This information will be printed as a header in the seller's payout summary
 
 #Set defaults for variables that are customizable
-
-#Init new seller
-##Function that automatically generates new seller ID
-#Do I need to import random?
-def generate_random_id(first_name, last_name,existing_ids):
-    first_initial = first_name[0].upper() ##Prioritize first letters to make it memorable
-    last_initial = last_name[0].upper()
-    while True:
-        random_letters = [random.choice(first_initial+last_initial)]
-        random_letters += [random.choice(first_name+last_name) for _ in range(random.randint(0, 2))]
-        random_id = ''.join(random_letters).upper()
-        if random_id not in existing_ids:
-            return(random_id)
-
-##Need multiple inputs here: first/last, address, phone number, email, number of items
-f=input('First name: ')
-l=input('Last name: ')
-ad=input('Address: ')
-phone=input('Phone number: ')
-email=input('E-mail: ')
-bag_count=input('Number of items to register (bag count): ')
-sell_ID=sellid_fun(f,l)
-##Write this info to seller_info.csv
 
 #Register sellers
 ttk.Button(frm, text="Register seller", command=).grid(column=1, row=0) ##Button to open register seller screen
