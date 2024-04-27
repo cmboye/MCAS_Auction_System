@@ -1,4 +1,4 @@
-##TO DO: check save sellers and make default to load sellers. Work on new/find seller screen, seller and buyer checkouts
+##TO DO: check save sellers and make default to load sellers. Work on new/find seller screen, seller and buyer checkouts. Make reg sheets?
 
 #MCAS system with GUI written by CB 3/6/24.
 required_packages = ['tkinter', 're', 'pandas','numpy'] #Check for packages needed
@@ -76,8 +76,18 @@ def new_window(): ##Window opened when registering sellers
     entry8=Entry(new_window, textvariable=bag_count)
     entry8.pack()
     def val_inputs_new():
-        ##TO-DO: Error handling- make sure all fields filled. Also make sure to convert all names to upper
-        ###More error handing: names, state should only be a-z and zip code 5 digits and phone number only digits. email should contain @ and .
+        input_vector1 = entry1.get().upper()
+        input_vector2 = entry2.get().upper()
+        input_vector3 = entry3.get()
+        input_vector4 = entry4.get()
+        input_vector5 = entry5.get()
+        input_vector6 = entry6.get()
+        input_vector7 = entry7.get()
+        input_vector8 = entry8.get()
+        if not input_vector1 or not input_vector2: ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please fill in both first and last name.")
+            return
+        ###TO-DO: More error handing: names, state should only be a-z and zip code 5 digits and phone number only digits. email should contain @ and .
         def generate_random_id(first_name, last_name, existing_ids):
             first_initial = first_name[0].upper() ##Prioritize first letters to make it memorable
             last_initial = last_name[0].upper()
@@ -87,14 +97,15 @@ def new_window(): ##Window opened when registering sellers
                 random_id = ''.join(random_letters).upper()
                 if random_id not in existing_ids:
                     return(random_id)
-
+        tmp_ID =  generate_random_id(input_vector1,input_vector2,slrs['ID']) ######Check that I will name the column this later######
+        tkinter.messagebox.showinfo("Seller ID", "Seller ID: "+str(tmp_ID))
+        ##Make this a pd df and write this info to seller_info.csv
         global bags ##Make the variable global
-        ids = [input_vector1 + "-" + str(i) for i in range(1, int(input_vector2) + 1)] ##If they pass error handling, populate all bags for that seller
+        ids = [tmp_ID + "-" + str(i) for i in range(1, int(input_vector8) + 1)] ##If they pass error handling, populate all bags for that seller
         idst = set(ids)
         bagst = set(bags)
         bagst.update(idst) ##Only keep unique IDs
         bags = list(bagst) ##Keep a list of all bags across all sellers
-        ##Write this info to seller_info.csv
         new_window.destroy()
 
     button = ttk.Button(new_window, text="Save", command=val_inputs_new)
