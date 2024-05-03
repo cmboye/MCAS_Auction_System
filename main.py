@@ -1,4 +1,4 @@
-##TO DO: check save sellers and make default to load sellers. Work on new/find seller screen, seller and buyer checkouts. Make reg sheets?
+##TO DO: resolve current NameError, check save sellers/load sellers. Work on new/find seller screen, seller and buyer checkouts. Make reg sheets? Seller and buyer checkout sheets?
 
 #MCAS system with GUI written by CB 3/6/24.
 required_packages = ['tkinter', 're', 'pandas','numpy'] #Check for packages needed
@@ -26,8 +26,12 @@ club_dollar=1
 club_prc=.30
 
 def load_data(file_path): ##Before anything, read seller file if present:
+    try:
         dat = pd.read_csv(file_path)
         return dat
+    except FileNotFoundError:
+        return pd.DataFrame()
+
 file_path = os.path.join(os.path.expanduser('~'),'Documents','seller_info.tsv'
 slrs = load_data(file_path)
 
@@ -36,10 +40,11 @@ def focus_next_entry(event):
     return "break"
 
 def new_window(): ##Window opened when registering sellers
+    global slrs
     new_window = Toplevel(root)
     new_window.iconbitmap("mcas.ico")
     new_window.title("New Seller")
-    new_window.geometry("300x800")  ##Set the size of the new window
+    new_window.geometry("300x550")  ##Set the size of the new window
     label1 = Label(new_window, image = patt)
     label1.place(x = 0, y = 0)
     new_window.attributes('-topmost', 'true')
@@ -76,6 +81,7 @@ def new_window(): ##Window opened when registering sellers
     entry8=Entry(new_window, textvariable=bag_count)
     entry8.pack()
     def val_inputs_new():
+        global slrs
         input_vector1 = entry1.get().upper()
         input_vector2 = entry2.get().upper()
         input_vector3 = entry3.get()
@@ -87,7 +93,15 @@ def new_window(): ##Window opened when registering sellers
         if not input_vector1 or not input_vector2: ##Basic error handling
             tkinter.messagebox.showinfo("Error", "Please fill in both first and last name.")
             return
-        ###TO-DO: More error handing: names, state should only be a-z and zip code 5 digits and phone number only digits. email should contain @ and .
+        while not re.match("^\d{5}+", input_vector5):
+            tkinter.messagebox.showinfo("Error", "Zip code should only contain digits.")
+            return
+        while not re.match("^\d{5}+", input_vector6):
+            tkinter.messagebox.showinfo("Error", "Phone number should only contain digits.")
+            return
+        while not re.match("^([1-9]|[1-4]\\d|50)$", input_vector8):
+            tkinter.messagebox.showinfo("Error", "Bag count must be 1-50. Please do not enter leading 0s") #If not DON, require a number 1-50
+            return
         def generate_random_id(first_name, last_name, existing_ids):
             first_initial = first_name[0].upper() ##Prioritize first letters to make it memorable
             last_initial = last_name[0].upper()
@@ -97,9 +111,10 @@ def new_window(): ##Window opened when registering sellers
                 random_id = ''.join(random_letters).upper()
                 if random_id not in existing_ids:
                     return(random_id)
-        tmp_ID =  generate_random_id(input_vector1,input_vector2,slrs['ID']) ######Check that I will name the column this later######
-        tkinter.messagebox.showinfo("Seller ID", "Seller ID: "+str(tmp_ID))
-        ##Make this a pd df and write this info to seller_info.csv
+        tmp_ID =  generate_random_id(input_vector1,input_vector2,slrs['ID'])
+        tkinter.messagebox.showinfo("Seller ID", "Seller ID: "+str(tmp_ID)) ##Maybe I can use something other than a messagebox to make it less annoying?
+        new_row = {'ID': tmp_id, 'First': input_vector1,'Last': input_vector2, 'Address': input_vector3, 'State': input_vector4, 'Zip': float(input_vector5),'Phone': float(input_vector6), 'E-mail': input_vector7}
+        slrs = pd.concat([slrs, pd.DataFrame([new_row])], ignore_index=True)##Put all user entry info into a df
         global bags ##Make the variable global
         ids = [tmp_ID + "-" + str(i) for i in range(1, int(input_vector8) + 1)] ##If they pass error handling, populate all bags for that seller
         idst = set(ids)
@@ -108,7 +123,7 @@ def new_window(): ##Window opened when registering sellers
         bags = list(bagst) ##Keep a list of all bags across all sellers
         new_window.destroy()
 
-    button = ttk.Button(new_window, text="Save", command=val_inputs_new)
+    button = ttk.Button(new_window, text="Save", command=val_inputs_new) ##NameError: name 'slrs' is not defined error
     entry2.bind('<Return>', lambda event=None: val_inputs_new())
     entry2.bind('<Return>', lambda event=None: val_inputs_new())
     entry1.bind('<Tab>', focus_next_entry)
@@ -375,7 +390,7 @@ root = Tk()
 #root.bind("<Return>", returnPressed)  ##Later I need to add something like this to make enter key work
 root.iconbitmap("mcas.ico") ##Set icon
 root.title('MCAS Auction') ##Set window name
-root.geometry("1000x500") ##Make sure GUI fits to screen? Make this adaptive somehow?? Fix this later
+root.geometry("1050x500") ##Make sure GUI fits to screen? Make this adaptive somehow?? Fix this later
 patt = PhotoImage(file = "pattern.png")
 bacg = PhotoImage(file = "bg.png") ##Add background... Eventually I will add a lot of white space to right/bottom
 label2 = Label( root, image = bacg)
@@ -384,7 +399,7 @@ frm = ttk.Frame(root, padding=10)
 frm.grid()
 s=ttk.Style();s.configure('.', background='white') ##Use a white bg for ttk
 ttk.Label(frm, text="MCAS Auction", font=("TkDefaultFont",25)).grid(column=0, row=0)
-ttk.Button(frm, text="New seller", command=root.destroy).grid(column=1, row=0)
+ttk.Button(frm, text="New seller", command=new_window).grid(column=1, row=0)
 ttk.Button(frm, text="Register seller", command=reg_window).grid(column=2, row=0)
 ttk.Button(frm, text="Auction entry", command=auction_window).grid(column=3, row=0)
 ttk.Button(frm, text="View data", command=data_window).grid(column=4, row=0)
