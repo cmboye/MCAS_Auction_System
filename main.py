@@ -317,6 +317,71 @@ def auction_window():
     entry4.bind('<Tab>', focus_next_entry)
     return
 
+def cash_window():
+    cash_window =  Toplevel(root)
+    cash_window.iconbitmap("mcas.ico")
+    cash_window.title("Cash out buyers")
+    cash_window.geometry("300x200")
+    label1 = Label(cash_window, image = patt)
+    label1.place(x = 0, y = 0)
+    cash_window.attributes('-topmost', 'true')
+    buyer_num = StringVar()
+    ttk.Label(cash_window, text="Enter buyer number:").pack(pady=10)
+    entry1=Entry(cash_window, textvariable=buyer_num)
+    entry1.pack()
+    def cash_out_save():
+        input_vector1 = entry1.get()
+        if not input_vector1: ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please enter buyer number.")
+            return
+        if not input_vector1.isdigit() or len(input_vector1) != 3:
+            tkinter.messagebox.showinfo("Error", "Please enter a 3 digit number for the buyer ID.")
+            return
+        if not input_vector1 in df2['buyer'] #Check this works?
+            tkinter.messagebox.showinfo("Error", "Buyer ID does not exist in this file.")
+            return
+        subs_df = df2.loc[df2['Buyer'] == buyer_num] ##Find all entries in df that have this buyer number
+        subs_sum = subs_df['Price'].sum() ##Sum the price of items bought
+        ##Display a pdf that contains the buyer number at top, itemized reciept, and total due; logo too?
+        ##See https://stackoverflow.com/questions/33155776/export-pandas-dataframe-into-a-pdf-file-using-python for ideas?
+        ##Just display the df at first, then add print button below??
+
+    ttk.Button(cash_window, text="Search", command=cash_out_save).pack(pady=10)
+    entry1.bind('<Return>', lambda event=None: cash_out_save())
+    entry1.bind('<Tab>', focus_next_entry)
+    return
+
+def payout_window():
+    payout_window = Toplevel(root)
+    payout_window.iconbitmap("mcas.ico")
+    payout_window.title("Pay out sellers")
+    payout_window.geometry("300x200")
+    label1 = Label(payout_window, image = patt)
+    label1.place(x = 0, y = 0)
+    payout_window.attributes('-topmost', 'true')
+    seller_num = StringVar()
+    ttk.Label(payout_window, text="Enter seller ID:").pack(pady=10)
+    entry1=Entry(payout_window, textvariable=seller_num)
+    entry1.pack()
+    def payout_save():
+        input_vector1 = entry1.get()
+        if not input_vector1: ##Basic error handling
+            tkinter.messagebox.showinfo("Error", "Please enter seller ID.")
+            return
+        while not re.match("^[-a-zA-Z ]{1,3}$", input_vector1):
+            tkinter.messagebox.showinfo("Error", "Please enter 1-3 letters for the seller ID.")
+            return
+        if not input_vector1 in df2['seller'] #Check this works?
+            tkinter.messagebox.showinfo("Error", "Seller ID does not exist in this file.")
+            return
+        ##Subset df2 by sellers
+        ##Here, add the total price, buyer payout, and club payout (per item and sum of each)?
+
+    ttk.Button(payout_window, text="Search", command=payout_save).pack(pady=10)
+    entry1.bind('<Return>', lambda event=None: payout_save())
+    entry1.bind('<Tab>', focus_next_entry)
+    return
+
 def save_window():
     save_window = Toplevel(root)
     save_window.iconbitmap("mcas.ico")
@@ -387,7 +452,6 @@ def quit_confirmation():
      root.destroy()
 
 root = Tk()
-#root.bind("<Return>", returnPressed)  ##Later I need to add something like this to make enter key work
 root.iconbitmap("mcas.ico") ##Set icon
 root.title('MCAS Auction') ##Set window name
 root.geometry("1050x500") ##Make sure GUI fits to screen? Make this adaptive somehow?? Fix this later
@@ -426,12 +490,6 @@ ltemp=input('Last name: ')
 if(sellertemp=NULL, fltemp=paste(ftemp,ltemp), str_extract(fltemp,paste(first,last)), else(str_extract(sellertemp,sell_ID)))
 ##If there are multiple matches, how do I let user choose? Also, be sure to PROMPT if user wants to add new seller (Y/N) button; best if I can autofill first/last?
 ##Need to make sure new sellers are automatically saved?
-
-#Init billing system (summarize table by buyer number)
-##How was this done before? Do I create a unique list of seller IDs and auto-print each??? Might make this is a sub-menu or something... Maybe also make a user-friendly way to cancel printing?
-buytemp=input('Buyer number: ')##Enter the buyer number
-return(subset(df,df$buyer_number==buytemp)) ##Return certain information for this buyer
-##Need to create an easy way to have this interact with the printer
 
 #Init seller payout system:
 selltemp=input('Seller number: ')##Enter seller ID
